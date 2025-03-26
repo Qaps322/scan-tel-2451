@@ -7,63 +7,80 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
+        /* Оформление рамки для области сканирования */
         #reader {
-            width: 100vw;
-            height: 100vh;
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: relative;
+            width: 100%;
+            height: 600px;
+            border: 2px solid #00ff00; /* Зеленая рамка */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* Рамка для наведения QR-кода */
-        #qr-frame {
+        /* Оформление центральной области сканирования */
+        .qr-box {
             position: absolute;
-            top: 10vh; /* Поднимаем рамку на 10% от высоты экрана */
+            width: 250px;
+            height: 250px;
+            border: 4px solid #00ff00; /* Зеленая рамка для области сканирования */
+            background-color: rgba(0, 255, 0, 0.2); /* Полупрозрачный фон для выделенной области */
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%); /* Центрируем рамку по горизонтали */
-            width: 50vw;
-            height: 50vw;
-            max-width: 250px;
-            max-height: 250px;
-            border: 4px solid red;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-            pointer-events: none;
-        }
-
-        /* Фон вокруг сканера для затемнения */
-        #reader .html5-qrcode-video {
-            object-fit: cover;
-        }
-
-        /* Отключение взаимодействия за пределами рамки */
-        .qrbox-mask {
-            position: absolute;
-            top: 10vh;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50vw;
-            height: 50vw;
-            max-width: 250px;
-            max-height: 250px;
-            background-color: rgba(0, 0, 0, 0.5); /* Затемнение области за рамкой */
-            pointer-events: none; /* Чтобы не мешало взаимодействовать с сканером */
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
 <body>
-    <div id="reader"></div>
-    <div id="qr-frame"></div> <!-- Рамка -->
-    <div id="result"></div> <!-- Результат сканирования -->
+    <div id="reader">
+        <div class="qr-box"></div> <!-- Центральная область для сканирования -->
+    </div>
 
     <script>
         const html5QrCode = new Html5Qrcode("reader");
 
-        // Получаем размеры рамки
-        const frame = document.getElementById('qr-frame');
-        const frameWidth = frame.offsetWidth;
-        const frameHeight = frame.offsetHeight;
-
         // Функция для обработки успешного сканирования
         function onScanSuccess(decodedText, decodedResult) {
-            // Показываем результат на странице
-            document.getElementById('result').textContent = "QR-код: " + decodedText
+            
+            // Отправляем данные в Telegram Web App
+           if (window.Telegram && window.Telegram.WebApp) {
+            try {
+                window.Telegram.WebApp.sendData(decodedText);
+                console.log("Данные отправлены:", decodedText);  // Логируем, что отправлено
+            } catch (err) {
+                console.error("Ошибка при отправке данных:", err);
+                }
+            } else {
+                console.log("Telegram WebApp не доступен");
+            }
+
+            // Останавливаем сканер после первого сканирования
+            html5QrCode.stop().then(ignore => {
+                console.log("Сканирование остановлено.");
+            }).catch(err => {
+                console.log("Ошибка при остановке сканера: ", err);
+            });
+        }
+
+        // Функция для обработки ошибок
+        function onScanError(errorMessage) {
+            console.log("Ошибка сканирования: ", errorMessage);
+        }
+
+        const config = {
+            fps: 10,  // Частота кадров
+            qrbox: 250,  // Размер области для сканирования
+        };
+
+        // Запуск сканера
+        html5QrCode.start(
+            { facingMode: "environment" },  // Камера по умолчанию (задняя)
+            config,
+            onScanSuccess,
+            onScanError  // Обработка ошибок
+        ).catch(err => {
+            console.log("Ошибка при запуске сканера: ", err);
+        });
+    </script>
+</body>
+</html>
