@@ -27,6 +27,9 @@
         /* Рамка для наведения QR-кода */
         #qr-frame {
             position: absolute;
+            top: 10vh; /* Поднимаем рамку выше (10% от высоты экрана) */
+            left: 50%;
+            transform: translateX(-50%); /* Центрируем по горизонтали */
             width: 50vw;
             height: 50vw;
             max-width: 250px;
