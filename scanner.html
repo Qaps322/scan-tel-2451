@@ -16,6 +16,8 @@
 
         function onScanSuccess(decodedText, decodedResult) {
             document.getElementById('result').textContent = "QR-код: " + decodedText;
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(decodedText);
             html5QrCode.stop().then(ignore => {
                 console.log("Сканирование остановлено.");
             }).catch(err => {
