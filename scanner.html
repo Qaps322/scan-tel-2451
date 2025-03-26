@@ -30,11 +30,9 @@
             pointer-events: none;
         }
 
-        /* Маска для видео сканера, чтобы скрыть области за рамкой */
+        /* Фон вокруг сканера для затемнения */
         #reader .html5-qrcode-video {
             object-fit: cover;
-            mask-image: radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%);
-            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%);
         }
 
         /* Отключение взаимодействия за пределами рамки */
@@ -68,7 +66,4 @@
         // Функция для обработки успешного сканирования
         function onScanSuccess(decodedText, decodedResult) {
             // Показываем результат на странице
-            document.getElementById('result').textContent = "QR-код: " + decodedText;
-
-            // Отправляем данные в Telegram Web App
-            if (window.Tele
+            document.getElementById('result').textContent = "QR-код: " + decodedText
