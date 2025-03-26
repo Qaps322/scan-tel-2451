@@ -30,10 +30,25 @@
             pointer-events: none;
         }
 
-        /* Фон вокруг сканера, чтобы скрыть области за рамкой */
+        /* Маска для видео сканера, чтобы скрыть области за рамкой */
         #reader .html5-qrcode-video {
-            mask-image: radial-gradient(circle, transparent 50%, black 50%);
-            -webkit-mask-image: radial-gradient(circle, transparent 50%, black 50%);
+            object-fit: cover;
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%);
+        }
+
+        /* Отключение взаимодействия за пределами рамки */
+        .qrbox-mask {
+            position: absolute;
+            top: 10vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50vw;
+            height: 50vw;
+            max-width: 250px;
+            max-height: 250px;
+            background-color: rgba(0, 0, 0, 0.5); /* Затемнение области за рамкой */
+            pointer-events: none; /* Чтобы не мешало взаимодействовать с сканером */
         }
     </style>
 </head>
@@ -56,47 +71,4 @@
             document.getElementById('result').textContent = "QR-код: " + decodedText;
 
             // Отправляем данные в Telegram Web App
-            if (window.Telegram && window.Telegram.WebApp) {
-                try {
-                    window.Telegram.WebApp.sendData(decodedText);
-                    console.log("Данные отправлены:", decodedText);  // Логируем, что отправлено
-                } catch (err) {
-                    console.error("Ошибка при отправке данных:", err);  // Логируем ошибку
-                }
-            } else {
-                console.log("Telegram WebApp не доступен");
-            }
-
-            // Останавливаем сканер после первого успешного сканирования
-            html5QrCode.stop().then(ignore => {
-                console.log("Сканирование остановлено.");
-            }).catch(err => {
-                console.log("Ошибка при остановке сканера: ", err);
-            });
-        }
-
-        // Функция для обработки ошибок
-        function onScanError(errorMessage) {
-            console.log("Ошибка сканирования: ", errorMessage);
-        }
-
-        const config = {
-            fps: 10,  // Частота кадров
-            qrbox: {
-                width: frameWidth,  // Ширина области сканирования равна ширине рамки
-                height: frameHeight  // Высота области сканирования равна высоте рамки
-            },
-        };
-
-        // Запуск сканера
-        html5QrCode.start(
-            { facingMode: "environment" },  // Камера по умолчанию (задняя)
-            config,
-            onScanSuccess,  // Обработка успешного сканирования
-            onScanError     // Обработка ошибок
-        ).catch(err => {
-            console.log("Ошибка при запуске сканера: ", err);
-        });
-    </script>
-</body>
-</html>
+            if (window.Tele
