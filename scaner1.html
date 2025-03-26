@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+</head>
+<body>
+    <h1>Сканировать QR-код FFFF</h1>
+    <video id="camera" width="100%" height="400px" autoplay></video>
+
+    <script>
+        const videoElement = document.getElementById("camera");
+
+        // Попробуем получить доступ к камере
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                videoElement.srcObject = stream;
+            })
+            .catch(function(error) {
+                console.log("Ошибка при доступе к камере: ", error);
+            });
+    </script>
+</body>
+</html>
