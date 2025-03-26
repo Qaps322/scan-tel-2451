@@ -29,7 +29,7 @@
                 document.getElementById('telegramStatus').textContent = "✅ Данные успешно отправлены в Telegram!";
             } catch (err) {
                 console.error("Ошибка при отправке данных:", err);  // Логируем ошибку
-                document.getElementById('telegramStatus').textContent = "❌ Ошибка отправки данных в Telegram. " + err.message;
+                document.getElementById('telegramStatus').textContent = "❌ Ошибка отправки данных в Telegram. Воу" + err.message;
                 }
             } else {
                 console.log("Telegram WebApp не доступен");
