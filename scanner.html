@@ -11,7 +11,8 @@
             width: 100vw;
             height: 100vh;
             position: absolute;
-            top: 0; /* Сканер на весь экран */
+            top: 0;
+            left: 0;
         }
 
         /* Рамка для наведения QR-кода */
@@ -26,13 +27,21 @@
             max-height: 250px;
             border: 4px solid red;
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-            pointer-events: none; /* Чтобы рамка не мешала взаимодействию */
+            pointer-events: none;
+        }
+
+        /* Фон вокруг сканера, чтобы скрыть области за рамкой */
+        #reader .html5-qrcode-video {
+            mask-image: radial-gradient(circle, transparent 50%, black 50%);
+            -webkit-mask-image: radial-gradient(circle, transparent 50%, black 50%);
         }
     </style>
 </head>
 <body>
     <div id="reader"></div>
     <div id="qr-frame"></div> <!-- Рамка -->
+    <div id="result"></div> <!-- Результат сканирования -->
+
     <script>
         const html5QrCode = new Html5Qrcode("reader");
 
@@ -44,6 +53,7 @@
         // Функция для обработки успешного сканирования
         function onScanSuccess(decodedText, decodedResult) {
             // Показываем результат на странице
+            document.getElementById('result').textContent = "QR-код: " + decodedText;
 
             // Отправляем данные в Telegram Web App
             if (window.Telegram && window.Telegram.WebApp) {
