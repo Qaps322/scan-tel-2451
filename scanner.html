@@ -22,8 +22,9 @@
         #reader {
             width: 100vw;
             height: 100vh;
+            position: absolute;
         }
-        /* Рамка для сканирования */
+        /* Рамка для наведения QR-кода */
         #qr-frame {
             position: absolute;
             width: 50vw;
@@ -64,3 +65,24 @@
         }
 
         function onScanError(errorMessage) {
+            console.log("Ошибка сканирования: ", errorMessage);
+        }
+
+        function startScanner() {
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 } // Ограничение области сканирования рамкой
+                },
+                onScanSuccess,
+                onScanError
+            ).catch(err => {
+                console.log("Ошибка при запуске сканера: ", err);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", startScanner);
+    </script>
+</body>
+</html>
