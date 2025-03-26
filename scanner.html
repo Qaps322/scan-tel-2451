@@ -7,82 +7,86 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: black;
-            position: relative;
-        }
         #reader {
             width: 100vw;
             height: 100vh;
             position: absolute;
+            top: 0; /* Сканер на весь экран */
         }
+
         /* Рамка для наведения QR-кода */
         #qr-frame {
             position: absolute;
+            top: 10vh; /* Поднимаем рамку на 10% от высоты экрана */
+            left: 50%;
+            transform: translateX(-50%); /* Центрируем рамку по горизонтали */
             width: 50vw;
             height: 50vw;
             max-width: 250px;
             max-height: 250px;
             border: 4px solid red;
             box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-            pointer-events: none;
+            pointer-events: none; /* Чтобы рамка не мешала взаимодействию */
         }
     </style>
 </head>
 <body>
     <div id="reader"></div>
-    <div id="qr-frame"></div> <!-- Рамка для наведения -->
-
+    <div id="qr-frame"></div> <!-- Рамка -->
     <script>
         const html5QrCode = new Html5Qrcode("reader");
 
-        function onScanSuccess(decodedText) {
-            console.log("QR-код: ", decodedText);
+        // Получаем размеры рамки
+        const frame = document.getElementById('qr-frame');
+        const frameWidth = frame.offsetWidth;
+        const frameHeight = frame.offsetHeight;
+
+        // Функция для обработки успешного сканирования
+        function onScanSuccess(decodedText, decodedResult) {
+            // Показываем результат на странице
+
+            // Отправляем данные в Telegram Web App
             if (window.Telegram && window.Telegram.WebApp) {
                 try {
                     window.Telegram.WebApp.sendData(decodedText);
-                    console.log("Данные отправлены: ", decodedText);
+                    console.log("Данные отправлены:", decodedText);  // Логируем, что отправлено
                 } catch (err) {
-                    console.error("Ошибка при отправке данных: ", err);
+                    console.error("Ошибка при отправке данных:", err);  // Логируем ошибку
                 }
             } else {
                 console.log("Telegram WebApp не доступен");
             }
 
-            html5QrCode.stop().then(() => {
+            // Останавливаем сканер после первого успешного сканирования
+            html5QrCode.stop().then(ignore => {
                 console.log("Сканирование остановлено.");
             }).catch(err => {
                 console.log("Ошибка при остановке сканера: ", err);
             });
         }
 
+        // Функция для обработки ошибок
         function onScanError(errorMessage) {
             console.log("Ошибка сканирования: ", errorMessage);
         }
 
-        function startScanner() {
-            html5QrCode.start(
-                { facingMode: "environment" },
-                { 
-                    fps: 10, 
-                    qrbox: { width: 250, height: 250 } // Ограничение области сканирования рамкой
-                },
-                onScanSuccess,
-                onScanError
-            ).catch(err => {
-                console.log("Ошибка при запуске сканера: ", err);
-            });
-        }
+        const config = {
+            fps: 10,  // Частота кадров
+            qrbox: {
+                width: frameWidth,  // Ширина области сканирования равна ширине рамки
+                height: frameHeight  // Высота области сканирования равна высоте рамки
+            },
+        };
 
-        document.addEventListener("DOMContentLoaded", startScanner);
+        // Запуск сканера
+        html5QrCode.start(
+            { facingMode: "environment" },  // Камера по умолчанию (задняя)
+            config,
+            onScanSuccess,  // Обработка успешного сканирования
+            onScanError     // Обработка ошибок
+        ).catch(err => {
+            console.log("Ошибка при запуске сканера: ", err);
+        });
     </script>
 </body>
 </html>
