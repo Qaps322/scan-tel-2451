@@ -6,57 +6,67 @@
     <title>QR Scanner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000; /* Фон для улучшенной видимости */
+        }
+        #reader {
+            width: 100vw;
+            height: 100vh;
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
 </head>
 <body>
-    <div id="reader" style="width: 100%; height: 600px;"></div> <!-- Увеличиваем высоту для улучшенной видимости -->
-
+    <div id="reader"></div>
     <script>
         const html5QrCode = new Html5Qrcode("reader");
-
-        // Функция для обработки успешного сканирования
+        
         function onScanSuccess(decodedText, decodedResult) {
-            // Показываем результат на странице
-            document.getElementById('result').textContent = "QR-код: " + decodedText;
-            
-            // Отправляем данные в Telegram Web App
-           if (window.Telegram && window.Telegram.WebApp) {
-            try {
-                window.Telegram.WebApp.sendData(decodedText);
-                console.log("Данные отправлены:", decodedText);  // Логируем, что отправлено
-            } catch (err) {
-                console.error("Ошибка при отправке данных:", err);  // Логируем ошибку
+            console.log("QR-код: ", decodedText);
+            if (window.Telegram && window.Telegram.WebApp) {
+                try {
+                    window.Telegram.WebApp.sendData(decodedText);
+                    console.log("Данные отправлены: ", decodedText);
+                } catch (err) {
+                    console.error("Ошибка при отправке данных: ", err);
                 }
             } else {
                 console.log("Telegram WebApp не доступен");
             }
-
-            // Останавливаем сканер после первого сканирования
-            html5QrCode.stop().then(ignore => {
+            html5QrCode.stop().then(() => {
                 console.log("Сканирование остановлено.");
             }).catch(err => {
                 console.log("Ошибка при остановке сканера: ", err);
             });
         }
-
-        // Функция для обработки ошибок
+        
         function onScanError(errorMessage) {
             console.log("Ошибка сканирования: ", errorMessage);
         }
-
-        const config = {
-            fps: 10,  // Частота кадров
-            qrbox: 250,  // Размер области для сканирования
-        };
-
-        // Запуск сканера
-        html5QrCode.start(
-            { facingMode: "environment" },  // Камера по умолчанию (задняя)
-            config,
-            onScanSuccess,
-            onScanError  // Обработка ошибок
-        ).catch(err => {
-            console.log("Ошибка при запуске сканера: ", err);
-        });
+        
+        function startScanner() {
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: window.innerWidth * 0.8, height: window.innerHeight * 0.8 } },
+                onScanSuccess,
+                onScanError
+            ).catch(err => {
+                console.log("Ошибка при запуске сканера: ", err);
+            });
+        }
+        
+        document.addEventListener("DOMContentLoaded", startScanner);
+        window.addEventListener("resize", startScanner);
     </script>
 </body>
 </html>
