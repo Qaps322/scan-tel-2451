@@ -22,12 +22,18 @@
             document.getElementById('result').textContent = "QR-код: " + decodedText;
             
             // Отправляем данные в Telegram Web App
-            if (window.Telegram && window.Telegram.WebApp) {
+           if (window.Telegram && window.Telegram.WebApp) {
+            try {
                 window.Telegram.WebApp.sendData(decodedText);
+                console.log("Данные отправлены:", decodedText);  // Логируем, что отправлено
                 document.getElementById('telegramStatus').textContent = "✅ Данные успешно отправлены в Telegram!";
+            } catch (err) {
+                console.error("Ошибка при отправке данных:", err);  // Логируем ошибку
+                document.getElementById('telegramStatus').textContent = "❌ Ошибка отправки данных в Telegram. " + err.message;
+                }
             } else {
-                console.log("Ошибка: Telegram WebApp не доступен.");
-                document.getElementById('telegramStatus').textContent = "❌ Ошибка отправки данных в Telegram.";
+                console.log("Telegram WebApp не доступен");
+                document.getElementById('telegramStatus').textContent = "❌ Telegram WebApp не доступен.";
             }
 
             // Останавливаем сканер после первого сканирования
