@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #000;
+        }
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="reader"></div>
+
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+        let alreadyScanned = false;
+
+        function onScanSuccess(decodedText, decodedResult) {
+            if (alreadyScanned) return;
+            alreadyScanned = true;
+
+            console.log("✅ Сканировано:", decodedText);
+
+            if (window.Telegram && window.Telegram.WebApp) {
+                try {
+                    window.Telegram.WebApp.sendData(decodedText);
+                    console.log("📤 Отправлено в Telegram WebApp");
+                } catch (err) {
+                    console.error("❌ Ошибка отправки:", err);
+                }
+            }
+
+            html5QrCode.stop().then(() => {
+                console.log("⛔️ Сканер остановлен");
+            }).catch(err => {
+                console.error("❌ Ошибка остановки:", err);
+            });
+        }
+
+        function onScanError(errorMessage) {
+            if (!errorMessage.includes("NotFoundException")) {
+                console.log("⚠️ Ошибка сканирования:", errorMessage);
+            }
+        }
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }, // Увеличенная область сканирования
+            disableFlip: false,
+            experimentalFeatures: {
+                useBarCodeDetectorIfSupported: true
+            }
+        };
+
+        // Получаем список камер
+        Html5Qrcode.getCameras().then(devices => {
+            console.log("📷 Камеры:", devices);
+            if (devices.length === 0) {
+                console.error("❌ Камеры не найдены");
+                return;
+            }
+
+            const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+
+            html5QrCode.start(
+                { deviceId: backCam.id }, // Используем лучшую доступную камеру
+                config,
+                onScanSuccess,
+                onScanError
+            ).catch(err => {
+                console.error("❌ Не удалось запустить сканер:", err);
+            });
+
+        }).catch(err => {
+            console.error("❌ Ошибка получения камер:", err);
+        });
+    </script>
+
+</body>
+</html>
