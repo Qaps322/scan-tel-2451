@@ -30,14 +30,10 @@
 
     <script>
         const html5QrCode = new Html5Qrcode("reader");
-        let alreadyScanned = false;
 
         function onScanSuccess(decodedText, decodedResult) {
-            if (alreadyScanned) return;
-            alreadyScanned = true;
-
             console.log("✅ Сканировано:", decodedText);
-
+            
             if (window.Telegram && window.Telegram.WebApp) {
                 try {
                     window.Telegram.WebApp.sendData(decodedText);
@@ -61,36 +57,24 @@
         }
 
         const config = {
-            fps: 10,
-            qrbox: { width: 250, height: 250 }, // Увеличенная область сканирования
-            disableFlip: false,
+            fps: 15,  // Увеличиваем FPS для быстрого сканирования
+            qrbox: { width: 250, height: 250 }, // Увеличенный размер области
+            disableFlip: false, // Включаем поддержку зеркальных кодов
             experimentalFeatures: {
                 useBarCodeDetectorIfSupported: true
             }
         };
 
-        // Получаем список камер
-        Html5Qrcode.getCameras().then(devices => {
-            console.log("📷 Камеры:", devices);
-            if (devices.length === 0) {
-                console.error("❌ Камеры не найдены");
-                return;
-            }
-
-            const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-
-            html5QrCode.start(
-                { deviceId: backCam.id }, // Используем лучшую доступную камеру
-                config,
-                onScanSuccess,
-                onScanError
-            ).catch(err => {
-                console.error("❌ Не удалось запустить сканер:", err);
-            });
-
-        }).catch(err => {
-            console.error("❌ Ошибка получения камер:", err);
+        // Запуск сканера с выбором камеры, как в твоем коде
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config,
+            onScanSuccess,
+            onScanError
+        ).catch(err => {
+            console.error("❌ Ошибка запуска сканера:", err);
         });
+
     </script>
 
 </body>
