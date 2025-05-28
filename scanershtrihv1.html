@@ -1,78 +1,102 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
-    <style>
-        #reader {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .qr-box {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Сканер штрихкодов</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: white;
+      font-family: sans-serif;
+      height: 100%;
+    }
+    #scanner-container {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+    #interactive {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    #overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300px;
+      height: 100px;
+      transform: translate(-50%, -50%);
+      border: 2px dashed #00ff00;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-    <div id="reader">
-        <div class="qr-box"></div>
-    </div>
+  <div id="scanner-container">
+    <div id="interactive" class="viewport"></div>
+    <div id="overlay"></div>
+  </div>
 
-    <script>
-        const html5QrCode = new Html5Qrcode("reader");
+  <script>
+    const TelegramWebApp = window.Telegram.WebApp;
+    TelegramWebApp?.ready();
 
-        function onScanSuccess(decodedText, decodedResult) {
-            console.log("✅ Сканировано:", decodedText);
+    let sent = false;
 
-            if (window.Telegram && window.Telegram.WebApp) {
-                try {
-                    window.Telegram.WebApp.sendData(decodedText);
-                    console.log("📤 Данные отправлены в Telegram WebApp");
-                } catch (err) {
-                    console.error("❌ Ошибка отправки:", err);
-                }
-            }
-
-            setTimeout(() => {
-                html5QrCode.stop().then(() => {
-                    console.log("⛔️ Сканер остановлен");
-                }).catch(err => {
-                    console.error("❌ Ошибка остановки:", err);
-                });
-            }, 500);
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#interactive'),
+        constraints: {
+          facingMode: "environment"
         }
+      },
+      decoder: {
+        readers: [
+          "ean_reader",
+          "upc_reader",
+          "upc_e_reader",
+          "code_128_reader"
+        ]
+      },
+      locate: true
+    }, function(err) {
+      if (err) {
+        console.error("❌ Ошибка инициализации:", err);
+        return;
+      }
+      Quagga.start();
+      console.log("📷 Сканер запущен");
+    });
 
-        function onScanError(errorMessage) {
-            if (!errorMessage.includes("NotFoundException")) {
-                console.warn("⚠️ Ошибка сканирования:", errorMessage);
-            }
+    Quagga.onDetected(function(data) {
+      if (sent) return;
+
+      const code = data.codeResult.code;
+      console.log("✅ Найден штрихкод:", code);
+      sent = true;
+
+      // Останавливаем камеру
+      Quagga.stop();
+
+      if (TelegramWebApp && TelegramWebApp.sendData) {
+        try {
+          TelegramWebApp.sendData(code);
+          console.log("📤 Отправлено в Telegram");
+        } catch (e) {
+          console.error("Ошибка отправки:", e);
         }
-
-        const config = {
-            fps: 10,
-            qrbox: 300,
-            disableFlip: false,
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true,
-                barCodeTypes: ["ean_13", "upc_a", "code_128"] // <== ключ
-            }
-        };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            onScanSuccess,
-            onScanError
-        ).catch(err => {
-            console.log("❌ Ошибка при запуске сканера:", err);
-        });
-    </script>
+      }
+    });
+  </script>
 </body>
 </html>
