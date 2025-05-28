@@ -2,30 +2,22 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Сканер штрихкодов</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Штрихкод сканер</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
-      background: #000;
-      font-family: sans-serif;
-      overflow: hidden;
-      color: white;
+      background: black;
     }
 
-    #container {
-      position: relative;
+    #reader {
       width: 100%;
       height: 100vh;
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      position: relative;
     }
 
     .barcode-box {
@@ -37,79 +29,63 @@
       transform: translate(-50%, -50%);
       border: 2px dashed #00ff00;
       z-index: 10;
-    }
-
-    #status {
-      position: absolute;
-      top: 0;
-      width: 100%;
-      text-align: center;
-      background: rgba(0,0,0,0.7);
-      padding: 10px;
-      z-index: 15;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <video id="video" autoplay muted playsinline></video>
+  <div id="reader">
     <div class="barcode-box"></div>
-    <div id="status">📷 Наведите на штрихкод</div>
   </div>
 
-  <script type="module">
-    import {
-      BrowserMultiFormatReader,
-      BarcodeFormat,
-      DecodeHintType
-    } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
+  <script>
+    const html5QrCode = new Html5Qrcode("reader");
 
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.UPC_A,
-      BarcodeFormat.EAN_13,
-      BarcodeFormat.CODE_128
-    ]);
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log("✅ Сканировано:", decodedText);
 
-    const reader = new BrowserMultiFormatReader(hints);
-    const video = document.getElementById('video');
-    const status = document.getElementById('status');
+      if (window.Telegram && window.Telegram.WebApp) {
+        try {
+          Telegram.WebApp.sendData(decodedText);
+          console.log("📤 Отправлено в Telegram");
+        } catch (err) {
+          console.error("❌ Ошибка отправки:", err);
+        }
+      }
 
-    let scanned = false;
-
-    async function startScanner() {
-      try {
-        const controls = await reader.decodeFromVideoDevice(null, video, (result, err) => {
-          if (result && !scanned) {
-            scanned = true;
-
-            const text = result.getText();
-            status.innerText = `✅ Сканировано: ${text}`;
-            console.log("✅ Код:", text);
-
-            if (window.Telegram?.WebApp?.sendData) {
-              try {
-                Telegram.WebApp.sendData(text);
-                console.log("📤 Отправлено в Telegram");
-              } catch (e) {
-                console.error("Ошибка отправки:", e);
-              }
-            }
-
-            setTimeout(() => {
-              controls.stop();
-              status.innerText = "⛔️ Камера остановлена";
-              console.log("⛔️ Сканер остановлен");
-            }, 1000);
-          }
+      setTimeout(() => {
+        html5QrCode.stop().then(() => {
+          console.log("⛔️ Сканер остановлен");
+        }).catch(err => {
+          console.error("❌ Ошибка остановки:", err);
         });
-      } catch (e) {
-        console.error("Ошибка запуска камеры:", e);
-        status.innerText = "❌ Не удалось запустить камеру";
+      }, 500);
+    }
+
+    function onScanError(errorMessage) {
+      // Просто логируем, чтобы не спамить
+      if (!errorMessage.includes("NotFoundException")) {
+        console.warn("⚠️ Ошибка сканирования:", errorMessage);
       }
     }
 
-    startScanner();
+    const config = {
+      fps: 10,
+      qrbox: { width: 320, height: 100 }, // Прямоугольная область
+      disableFlip: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
+    };
+
+    html5QrCode.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess,
+      onScanError
+    ).catch(err => {
+      console.log("❌ Ошибка запуска камеры:", err);
+    });
   </script>
 </body>
 </html>
