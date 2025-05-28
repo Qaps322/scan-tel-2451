@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <style>
+        #reader {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .qr-box {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="reader">
+        <div class="qr-box"></div>
+    </div>
+
+    <script>
+        const html5QrCode = new Html5Qrcode("reader");
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log("✅ Сканировано:", decodedText);
+
+            if (window.Telegram && window.Telegram.WebApp) {
+                try {
+                    window.Telegram.WebApp.sendData(decodedText);
+                    console.log("📤 Данные отправлены в Telegram WebApp");
+                } catch (err) {
+                    console.error("❌ Ошибка отправки:", err);
+                }
+            }
+
+            setTimeout(() => {
+                html5QrCode.stop().then(() => {
+                    console.log("⛔️ Сканер остановлен");
+                }).catch(err => {
+                    console.error("❌ Ошибка остановки:", err);
+                });
+            }, 500);
+        }
+
+        function onScanError(errorMessage) {
+            if (!errorMessage.includes("NotFoundException")) {
+                console.warn("⚠️ Ошибка сканирования:", errorMessage);
+            }
+        }
+
+        const config = {
+            fps: 10,  
+            qrbox: 300,
+            disableFlip: false,  
+            experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+        };
+
+        html5QrCode.start(
+            { facingMode: "environment" },  // Вернул авторазмер
+            config,
+            onScanSuccess,
+            onScanError  
+        ).catch(err => {
+            console.log("❌ Ошибка при запуске сканера:", err);
+        });
+    </script>
+</body>
+</html>
