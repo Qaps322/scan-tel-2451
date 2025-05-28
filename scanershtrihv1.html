@@ -11,16 +11,15 @@
       padding: 0;
       height: 100%;
       background: #000;
-      overflow: hidden;
       font-family: sans-serif;
+      overflow: hidden;
       color: white;
     }
 
-    #video-container {
+    #container {
       position: relative;
       width: 100%;
       height: 100vh;
-      overflow: hidden;
     }
 
     video {
@@ -38,26 +37,24 @@
       transform: translate(-50%, -50%);
       border: 2px dashed #00ff00;
       z-index: 10;
-      pointer-events: none;
     }
 
     #status {
       position: absolute;
-      top: 10px;
+      top: 0;
       width: 100%;
       text-align: center;
-      z-index: 20;
-      font-size: 18px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 5px 0;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      z-index: 15;
     }
   </style>
 </head>
 <body>
-  <div id="video-container">
+  <div id="container">
     <video id="video" autoplay muted playsinline></video>
     <div class="barcode-box"></div>
-    <div id="status">📷 Наведите камеру на штрихкод</div>
+    <div id="status">📷 Наведите на штрихкод</div>
   </div>
 
   <script type="module">
@@ -74,39 +71,41 @@
       BarcodeFormat.CODE_128
     ]);
 
-    const codeReader = new BrowserMultiFormatReader(hints);
-    const videoElement = document.getElementById('video');
-    const statusElement = document.getElementById('status');
+    const reader = new BrowserMultiFormatReader(hints);
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
 
     let scanned = false;
 
     async function startScanner() {
       try {
-        const controls = await codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+        const controls = await reader.decodeFromVideoDevice(null, video, (result, err) => {
           if (result && !scanned) {
             scanned = true;
-            const text = result.getText();
-            console.log("✅ Считано:", text);
-            statusElement.innerText = "✅ Сканировано: " + text;
 
-            if (window.Telegram && Telegram.WebApp) {
+            const text = result.getText();
+            status.innerText = `✅ Сканировано: ${text}`;
+            console.log("✅ Код:", text);
+
+            if (window.Telegram?.WebApp?.sendData) {
               try {
                 Telegram.WebApp.sendData(text);
                 console.log("📤 Отправлено в Telegram");
               } catch (e) {
-                console.error("❌ Ошибка отправки:", e);
+                console.error("Ошибка отправки:", e);
               }
             }
 
             setTimeout(() => {
               controls.stop();
-              statusElement.innerText = "⛔️ Камера отключена";
-            }, 700);
+              status.innerText = "⛔️ Камера остановлена";
+              console.log("⛔️ Сканер остановлен");
+            }, 1000);
           }
         });
       } catch (e) {
-        statusElement.innerText = "❌ Ошибка запуска камеры";
-        console.error("Ошибка запуска:", e);
+        console.error("Ошибка запуска камеры:", e);
+        status.innerText = "❌ Не удалось запустить камеру";
       }
     }
 
