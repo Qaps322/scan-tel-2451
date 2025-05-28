@@ -10,8 +10,10 @@
       margin: 0;
       padding: 0;
       height: 100%;
-      overflow: hidden;
       background: #000;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
     }
 
     #video-container {
@@ -38,40 +40,73 @@
       z-index: 10;
       pointer-events: none;
     }
+
+    #status {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      z-index: 20;
+      font-size: 18px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 5px 0;
+    }
   </style>
 </head>
 <body>
   <div id="video-container">
     <video id="video" autoplay muted playsinline></video>
     <div class="barcode-box"></div>
+    <div id="status">📷 Наведите камеру на штрихкод</div>
   </div>
 
   <script type="module">
-    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
+    import {
+      BrowserMultiFormatReader,
+      BarcodeFormat,
+      DecodeHintType
+    } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/+esm';
 
-    const codeReader = new BrowserMultiFormatReader();
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.CODE_128
+    ]);
+
+    const codeReader = new BrowserMultiFormatReader(hints);
     const videoElement = document.getElementById('video');
+    const statusElement = document.getElementById('status');
 
-    let scanning = true;
+    let scanned = false;
 
-    codeReader.decodeFromVideoDevice(null, videoElement, (result, err, controls) => {
-      if (result && scanning) {
-        console.log('✅ Считано:', result.getText());
-        scanning = false;
+    try {
+      const controls = await codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+        if (result && !scanned) {
+          scanned = true;
+          const text = result.getText();
+          console.log("✅ Считано:", text);
+          statusElement.innerText = "✅ Сканировано: " + text;
 
-        if (window.Telegram && Telegram.WebApp) {
-          try {
-            Telegram.WebApp.sendData(result.getText());
-            console.log('📤 Данные отправлены в Telegram');
-          } catch (e) {
-            console.error('❌ Ошибка отправки в Telegram:', e);
+          if (window.Telegram && Telegram.WebApp) {
+            try {
+              Telegram.WebApp.sendData(text);
+              console.log("📤 Отправлено в Telegram");
+            } catch (e) {
+              console.error("❌ Ошибка отправки:", e);
+            }
           }
-        }
 
-        // Останавливаем после считывания
-        controls.stop();
-      }
-    });
+          setTimeout(() => {
+            controls.stop();
+            statusElement.innerText = "⛔️ Камера отключена";
+          }, 700);
+        }
+      });
+    } catch (e) {
+      statusElement.innerText = "❌ Ошибка запуска камеры";
+      console.error("Ошибка запуска:", e);
+    }
   </script>
 </body>
 </html>
