@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Сканер штрихкодов</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: white;
+      font-family: sans-serif;
+      height: 100%;
+    }
+    #scanner-container {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+    }
+    #interactive {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    #overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 300px;
+      height: 100px;
+      transform: translate(-50%, -50%);
+      border: 2px dashed #00ff00;
+      z-index: 10;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="scanner-container">
+    <div id="interactive" class="viewport"></div>
+    <div id="overlay"></div>
+  </div>
+
+  <script>
+    const TelegramWebApp = window.Telegram.WebApp;
+    TelegramWebApp?.ready();
+
+    let sent = false;
+
+    Quagga.init({
+      inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#interactive'),
+        constraints: {
+          facingMode: "environment"
+        }
+      },
+      decoder: {
+        readers: [
+          "ean_reader",
+          "upc_reader",
+          "upc_e_reader",
+          "code_128_reader"
+        ]
+      },
+      locate: true
+    }, function(err) {
+      if (err) {
+        console.error("❌ Ошибка инициализации:", err);
+        return;
+      }
+      Quagga.start();
+      console.log("📷 Сканер запущен");
+    });
+
+    Quagga.onDetected(function(data) {
+      if (sent) return;
+
+      const code = data.codeResult.code;
+      console.log("✅ Найден штрихкод:", code);
+      sent = true;
+
+      // Останавливаем камеру
+      Quagga.stop();
+
+      if (TelegramWebApp && TelegramWebApp.sendData) {
+        try {
+          TelegramWebApp.sendData(code);
+          console.log("📤 Отправлено в Telegram");
+        } catch (e) {
+          console.error("Ошибка отправки:", e);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
