@@ -80,33 +80,37 @@
 
     let scanned = false;
 
-    try {
-      const controls = await codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
-        if (result && !scanned) {
-          scanned = true;
-          const text = result.getText();
-          console.log("✅ Считано:", text);
-          statusElement.innerText = "✅ Сканировано: " + text;
+    async function startScanner() {
+      try {
+        const controls = await codeReader.decodeFromVideoDevice(null, videoElement, (result, err) => {
+          if (result && !scanned) {
+            scanned = true;
+            const text = result.getText();
+            console.log("✅ Считано:", text);
+            statusElement.innerText = "✅ Сканировано: " + text;
 
-          if (window.Telegram && Telegram.WebApp) {
-            try {
-              Telegram.WebApp.sendData(text);
-              console.log("📤 Отправлено в Telegram");
-            } catch (e) {
-              console.error("❌ Ошибка отправки:", e);
+            if (window.Telegram && Telegram.WebApp) {
+              try {
+                Telegram.WebApp.sendData(text);
+                console.log("📤 Отправлено в Telegram");
+              } catch (e) {
+                console.error("❌ Ошибка отправки:", e);
+              }
             }
-          }
 
-          setTimeout(() => {
-            controls.stop();
-            statusElement.innerText = "⛔️ Камера отключена";
-          }, 700);
-        }
-      });
-    } catch (e) {
-      statusElement.innerText = "❌ Ошибка запуска камеры";
-      console.error("Ошибка запуска:", e);
+            setTimeout(() => {
+              controls.stop();
+              statusElement.innerText = "⛔️ Камера отключена";
+            }, 700);
+          }
+        });
+      } catch (e) {
+        statusElement.innerText = "❌ Ошибка запуска камеры";
+        console.error("Ошибка запуска:", e);
+      }
     }
+
+    startScanner();
   </script>
 </body>
 </html>
