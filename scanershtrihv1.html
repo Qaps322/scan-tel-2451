@@ -33,8 +33,7 @@
       width: 300px;
       height: 100px;
       transform: translate(-50%, -50%);
-      border: 2px solid #00ff00;
-      box-sizing: border-box;
+      border: 2px dashed #00ff00;
       z-index: 10;
       pointer-events: none;
     }
@@ -86,6 +85,7 @@
       console.log("✅ Найден штрихкод:", code);
       sent = true;
 
+      // Останавливаем камеру
       Quagga.stop();
 
       if (TelegramWebApp && TelegramWebApp.sendData) {
