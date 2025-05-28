@@ -14,6 +14,7 @@
       color: white;
       font-family: sans-serif;
       height: 100%;
+      overflow: hidden;
     }
     #scanner-container {
       width: 100%;
@@ -34,6 +35,7 @@
       height: 100px;
       transform: translate(-50%, -50%);
       border: 2px dashed #00ff00;
+      box-sizing: border-box;
       z-index: 10;
       pointer-events: none;
     }
@@ -74,8 +76,22 @@
         console.error("❌ Ошибка инициализации:", err);
         return;
       }
+
       Quagga.start();
       console.log("📷 Сканер запущен");
+
+      // Убираем значок ▶️/⏸ на iOS
+      setTimeout(() => {
+        const video = document.querySelector("video");
+        if (video) {
+          video.setAttribute("playsinline", "");
+          video.setAttribute("muted", "");
+          video.setAttribute("autoplay", "");
+          video.controls = false;
+          video.removeAttribute("controls");
+          console.log("🎯 Видео-атрибуты обновлены");
+        }
+      }, 300);
     });
 
     Quagga.onDetected(function(data) {
@@ -85,7 +101,6 @@
       console.log("✅ Найден штрихкод:", code);
       sent = true;
 
-      // Останавливаем камеру
       Quagga.stop();
 
       if (TelegramWebApp && TelegramWebApp.sendData) {
@@ -93,7 +108,7 @@
           TelegramWebApp.sendData(code);
           console.log("📤 Отправлено в Telegram");
         } catch (e) {
-          console.error("Ошибка отправки:", e);
+          console.error("❌ Ошибка отправки:", e);
         }
       }
     });
