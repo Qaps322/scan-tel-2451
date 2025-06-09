@@ -25,16 +25,6 @@
       height: auto;
       margin-top: 10px;
     }
-    #start-scan {
-      padding: 15px 25px;
-      font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      background-color: #4CAF50;
-      color: white;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
     #log {
       font-size: 14px;
       margin-top: 10px;
@@ -44,8 +34,7 @@
 </head>
 <body>
 
-  <button id="start-scan">Запустить сканер</button>
-  <div id="reader" style="display: none;"></div>
+  <div id="reader"></div>
   <div id="log"></div>
 
   <script>
@@ -58,10 +47,7 @@
 
     const html5QrCode = new Html5Qrcode("reader");
 
-    document.getElementById('start-scan').addEventListener('click', () => {
-      document.getElementById('reader').style.display = 'block';
-      document.getElementById('start-scan').style.display = 'none';
-
+    function startScanner() {
       Html5Qrcode.getCameras().then(cameras => {
         if (cameras && cameras.length) {
           log("✅ Камеры найдены: " + cameras.length);
@@ -107,6 +93,12 @@
       }).catch(err => {
         log("❌ Ошибка получения камер: " + err);
       });
+    }
+
+    // Автостарт при загрузке страницы
+    window.addEventListener('load', () => {
+      log("🚀 Запуск сканера...");
+      startScanner();
     });
   </script>
 
