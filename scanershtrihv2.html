@@ -64,17 +64,9 @@
 
         html5QrCode.start(
             { facingMode: "environment" },  // Вернул авторазмер
-            {fps : 10, qrbox : 300},
+            config,
             onScanSuccess,
-            onScanError,
-            { formatsToSupport: [
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39
-            ] }
+            onScanError  
         ).catch(err => {
             console.log("❌ Ошибка при запуске сканера:", err);
         });
