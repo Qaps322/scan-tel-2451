@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Штрихкод сканер</title>
+    <title>QR Scanner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         #reader {
             position: relative;
@@ -17,11 +17,6 @@
             position: absolute;
             width: 300px;
             height: 300px;
-            border: 2px dashed #00ff00;
-            box-sizing: border-box;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -61,9 +56,9 @@
         }
 
         const config = {
-            fps: 10,
+            fps: 10,  
             qrbox: 300,
-            disableFlip: false,
+            disableFlip: false,  
             experimentalFeatures: { useBarCodeDetectorIfSupported: true },
             formatsToSupport: [
                 Html5QrcodeSupportedFormats.EAN_13,
@@ -76,10 +71,10 @@
         };
 
         html5QrCode.start(
-            { facingMode: "environment" },
+            { facingMode: "environment" },  // Вернул авторазмер
             config,
             onScanSuccess,
-            onScanError
+            onScanError  
         ).catch(err => {
             console.log("❌ Ошибка при запуске сканера:", err);
         });
