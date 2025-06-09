@@ -29,15 +29,28 @@
     }
     #overlay {
       position: absolute;
-      top: 30%; /* поднята выше центра */
+      top: 30%;
       left: 25%;
       width: 50%;
       height: 15%;
-      /*transform: translate(-50%, -50%);*/
       border: 2px dashed #00ff00;
       box-sizing: border-box;
       z-index: 10;
       pointer-events: none;
+    }
+    #log {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: #00ff00;
+      font-family: monospace;
+      padding: 10px;
+      font-size: 14px;
+      z-index: 9999;
+      max-height: 120px;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -47,9 +60,17 @@
     <div id="overlay"></div>
   </div>
 
+  <div id="log"></div> <!-- Логи на экран -->
+
   <script>
     const TelegramWebApp = window.Telegram.WebApp;
     TelegramWebApp?.ready();
+
+    function logToScreen(msg) {
+      const logDiv = document.getElementById('log');
+      logDiv.innerText += msg + '\n';
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
 
     let sent = false;
 
@@ -62,10 +83,10 @@
           facingMode: "environment"
         },
         area: {
-          top: "20%",     // Начало зоны сканирования (чуть выше рамки)
-          bottom: "60%",  // Конец зоны сканирования
-          left: "25%",    // Слева
-          right: "25%"    // Справа
+          top: "40%",
+          bottom: "50%",
+          left: "10%",
+          right: "40%"
         }
       },
       decoder: {
@@ -80,13 +101,14 @@
     }, function(err) {
       if (err) {
         console.error("❌ Ошибка инициализации:", err);
+        logToScreen("❌ Ошибка инициализации: " + err);
         return;
       }
 
       Quagga.start();
       console.log("📷 Сканер запущен");
+      logToScreen("📷 Сканер запущен");
 
-      // Убираем значок ▶️/⏸ на iOS
       setTimeout(() => {
         const video = document.querySelector("video");
         if (video) {
@@ -96,8 +118,15 @@
           video.controls = false;
           video.removeAttribute("controls");
           console.log("🎯 Видео-атрибуты обновлены");
+          logToScreen("🎯 Видео найдено");
+        } else {
+          logToScreen("⚠️ Видео элемент не найден!");
         }
-      }, 300);
+      }, 500);
+    });
+
+    Quagga.onProcessed(function(result) {
+      logToScreen("🛠 Frame processed: " + (result ? "✅" : "❌"));
     });
 
     Quagga.onDetected(function(data) {
@@ -105,16 +134,20 @@
 
       const code = data.codeResult.code;
       console.log("✅ Найден штрихкод:", code);
+      logToScreen("✅ Найден штрихкод: " + code);
       sent = true;
 
       Quagga.stop();
+      logToScreen("⛔️ Сканер остановлен");
 
       if (TelegramWebApp && TelegramWebApp.sendData) {
         try {
           TelegramWebApp.sendData(code);
           console.log("📤 Отправлено в Telegram");
+          logToScreen("📤 Отправлено в Telegram");
         } catch (e) {
           console.error("❌ Ошибка отправки:", e);
+          logToScreen("❌ Ошибка отправки: " + e);
         }
       }
     });
