@@ -29,7 +29,7 @@
     }
     #overlay {
       position: absolute;
-      top: 30%; /* поднята выше центра */
+      top: 30%;
       left: 25%;
       width: 50%;
       height: 15%;
@@ -52,6 +52,14 @@
       max-height: 120px;
       overflow-y: auto;
     }
+    #start-scan {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 9999;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -60,6 +68,7 @@
     <div id="overlay"></div>
   </div>
 
+  <button id="start-scan">Запустить сканер</button>
   <div id="log"></div>
 
   <script>
@@ -100,24 +109,28 @@
         return;
       }
 
-      Quagga.start();
-      console.log("📷 Сканер запущен");
-      logToScreen("📷 Сканер запущен");
+      logToScreen("✅ Quagga инициализирован");
 
-      setTimeout(() => {
-        const video = document.querySelector("video");
-        if (video) {
-          video.setAttribute("playsinline", "");
-          video.setAttribute("muted", "");
-          video.setAttribute("autoplay", "");
-          video.controls = false;
-          video.removeAttribute("controls");
-          console.log("🎯 Видео-атрибуты обновлены");
-          logToScreen("🎯 Видео найдено");
-        } else {
-          logToScreen("⚠️ Видео элемент не найден!");
-        }
-      }, 300);
+      // Запуск сканера — только по кнопке!
+      document.getElementById('start-scan').addEventListener('click', function() {
+        Quagga.start();
+        logToScreen("📷 Сканер запущен вручную");
+
+        setTimeout(() => {
+          const video = document.querySelector("video");
+          if (video) {
+            video.setAttribute("playsinline", "");
+            video.setAttribute("muted", "");
+            video.setAttribute("autoplay", "");
+            video.controls = false;
+            video.removeAttribute("controls");
+            console.log("🎯 Видео-атрибуты обновлены");
+            logToScreen("🎯 Видео найдено");
+          } else {
+            logToScreen("⚠️ Видео элемент не найден!");
+          }
+        }, 300);
+      });
     });
 
     Quagga.onProcessed(function(result) {
