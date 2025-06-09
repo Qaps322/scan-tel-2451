@@ -1,139 +1,89 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Сканер штрихкодов</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: black;
-      color: #00ff00;
-      font-family: sans-serif;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Сканер штрихкодов</title>
 
-    #reader {
-      width: 100%;
-      height: 100%;
-      position: relative;
-    }
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
 
-    .qr-box {
-      position: fixed;
-      width: 500px;
-      height: 150px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border: 2px dashed #00ff00;
-      z-index: 9999;
-      pointer-events: none;
-    }
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            color: white;
+            font-family: sans-serif;
+            height: 100%;
+            overflow: hidden;
+        }
 
-    #log {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      font-size: 14px;
-      padding: 10px;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-
-    #reader canvas {
-      background-color: transparent !important;
-    }
-  </style>
+        #scanner-container {
+            width: 100%;
+            height: 100vh; /* Полный экран */
+            position: relative;
+        }
+    </style>
 </head>
 <body>
-  <div id="reader"></div>
-  <div class="qr-box"></div>
-  <div id="log">🟡 Инициализация сканера...</div>
+    <div id="scanner-container"></div>
 
-  <script>
-    const log = (msg) => {
-      const logBox = document.getElementById('log');
-      logBox.innerText += "\n" + msg;
-      logBox.scrollTop = logBox.scrollHeight;
-    };
+    <script>
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#scanner-container'),
+                constraints: {
+                    facingMode: "environment" // Основная камера
+                },
+            },
+            decoder: {
+                readers: [
+                    "ean_reader",    // EAN-13
+                    "upc_reader",    // UPC-A
+                    "upc_e_reader",  // UPC-E
+                    "code_128_reader" // Дополнительно — вдруг пригодится
+                ]
+            },
+            locate: true, // Включить локализацию
+            numOfWorkers: navigator.hardwareConcurrency || 4
+        }, function (err) {
+            if (err) {
+                console.error("Ошибка инициализации:", err);
+                return;
+            }
+            console.log("✅ Сканер готов");
+            Quagga.start();
+        });
 
-    if (!window.Html5Qrcode) {
-      log("❌ html5-qrcode не загружен");
-    }
+        Quagga.onDetected(function (result) {
+            const code = result.codeResult.code;
+            console.log("✅ Штрихкод найден:", code);
 
-    if (!window.BarcodeDetector) {
-      log("⚠️ BarcodeDetector НЕ поддерживается — возможно, штрихкоды не будут сканироваться.");
-    } else {
-      log("✅ BarcodeDetector поддерживается — штрихкоды должны работать.");
-    }
+            // Отправляем в Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                try {
+                    window.Telegram.WebApp.sendData(code);
+                    console.log("📤 Данные отправлены в Telegram WebApp");
+                } catch (err) {
+                    console.error("❌ Ошибка отправки:", err);
+                }
+            }
 
-    const html5QrCode = new Html5Qrcode("reader");
+            // Останавливаем сканер после успешного считывания
+            Quagga.stop();
+        });
 
-    const config = {
-      fps: 15,
-      qrbox: { width: 500, height: 150 },
-      disableFlip: true,
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-      },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.CODE_128
-      ]
-    };
-
-    const onScanSuccess = (decodedText) => {
-      log("✅ Сканировано: " + decodedText);
-
-      if (Telegram?.WebApp) {
-        try {
-          Telegram.WebApp.sendData(decodedText);
-          log("📤 Отправлено в Telegram");
-        } catch (e) {
-          log("❌ Ошибка отправки: " + e.message);
-        }
-      }
-
-      html5QrCode.stop().then(() => {
-        log("⛔️ Сканер остановлен");
-      });
-    };
-
-    const onScanError = (errorMessage) => {
-      if (!errorMessage.includes("NotFoundException")) {
-        log("⚠️ Ошибка сканирования: " + errorMessage);
-      }
-    };
-
-    Html5Qrcode.getCameras().then(devices => {
-      if (!devices || devices.length === 0) {
-        log("❌ Камеры не найдены");
-        return;
-      }
-
-      const backCamera = { facingMode: "environment" };
-
-      html5QrCode.start(
-        backCamera,
-        config,
-        onScanSuccess,
-        onScanError
-      ).then(() => {
-        log("📷 Сканер запущен");
-      }).catch(err => {
-        log("❌ Ошибка запуска: " + err.message);
-      });
-
-    }).catch(err => {
-      log("❌ Ошибка получения камер: " + err.message);
-    });
-  </script>
+        // Дополнительно: обработка ошибок
+        Quagga.onProcessed(function (result) {
+            if (result) {
+                if (result.codeResult && result.codeResult.code) {
+                    console.log("Промежуточный результат:", result.codeResult.code);
+                }
+            }
+        });
+    </script>
 </body>
 </html>
