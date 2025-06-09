@@ -1,88 +1,117 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Scanner</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
-    <style>
-        #reader {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .qr-box {
-            position: absolute;
-            width: 200px;
-            height: 200px;
-            /* background-color: rgba(0, 255, 0, 0.2); */
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Сканер штрихкодов (html5-qrcode)</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: white;
+      font-family: sans-serif;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    #reader {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      margin-top: 10px;
+    }
+    #log {
+      width: 100%;
+      max-width: 500px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #00ff00;
+      font-family: monospace;
+      padding: 10px;
+      font-size: 14px;
+      margin-top: 10px;
+      overflow-y: auto;
+      max-height: 200px;
+      border: 1px solid #00ff00;
+    }
+  </style>
 </head>
 <body>
-    <div id="reader">
-        <div class="qr-box"></div>
-    </div>
 
-    <script>
-        const html5QrCode = new Html5Qrcode("reader");
-        let alreadyScanned = false;
+  <div id="reader"></div>
+  <div id="log">🟢 Лог сканера:\n</div>
 
-        function onScanSuccess(decodedText, decodedResult) {
-            if (alreadyScanned) return;
-            alreadyScanned = true;
+  <script>
+    const TelegramWebApp = window.Telegram.WebApp;
+    TelegramWebApp?.ready();
 
-            console.log("✅ Сканировано:", decodedText);
+    function log(msg) {
+      const logDiv = document.getElementById('log');
+      logDiv.innerText += msg + '\n';
+      logDiv.scrollTop = logDiv.scrollHeight; // прокрутка вниз
+      console.log(msg); // на всякий случай в консоль
+    }
 
-            if (window.Telegram && window.Telegram.WebApp) {
-                try {
-                    window.Telegram.WebApp.sendData(decodedText);
-                    console.log("📤 Отправлено в Telegram WebApp");
-                } catch (err) {
-                    console.error("❌ Ошибка отправки:", err);
-                }
-            }
+    const html5QrCode = new Html5Qrcode("reader");
 
-            html5QrCode.stop().then(() => {
-                console.log("⛔️ Сканер остановлен");
-            }).catch(err => {
-                console.error("❌ Ошибка остановки:", err);
-            });
-        }
+    function startScanner() {
+      Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+          log("✅ Камеры найдены: " + cameras.length);
+          const cameraId = cameras[0].id;
 
-        function onScanError(errorMessage) {
-            if (!errorMessage.includes("NotFoundException")) {
-                console.log("⚠️ Ошибка сканирования:", errorMessage);
-            }
-        }
-
-        const config = {
-            fps: 10,
-            qrbox: 200,
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true
+          html5QrCode.start(
+            cameraId,
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 150 },
+              formatsToSupport: [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128
+              ]
             },
-            aspectRatio: 1.0
-        };
+            (decodedText, decodedResult) => {
+              log("✅ Найден код: " + decodedText);
+              html5QrCode.stop().then(() => {
+                log("⛔️ Сканер остановлен");
+                if (TelegramWebApp && TelegramWebApp.sendData) {
+                  try {
+                    TelegramWebApp.sendData(decodedText);
+                    log("📤 Отправлено в Telegram");
+                    TelegramWebApp.close();
+                  } catch (e) {
+                    log("❌ Ошибка отправки: " + e);
+                  }
+                }
+              });
+            },
+            (errorMessage) => {
+              // Покажем в логах ошибки по фреймам
+              log("❌ Ошибка сканирования: " + errorMessage);
+            }
+          );
+        } else {
+          log("❌ Камеры не найдены");
+        }
+      }).catch(err => {
+        log("❌ Ошибка получения камер: " + err);
+      });
+    }
 
-        Html5Qrcode.getCameras().then(devices => {
-            console.log("📷 Камеры:", devices);
+    // Автостарт при загрузке страницы
+    window.addEventListener('load', () => {
+      log("🚀 Запуск сканера...");
+      startScanner();
+    });
+  </script>
 
-            const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-
-            html5QrCode.start(
-                { deviceId: { exact: backCam.id }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-                config,
-                onScanSuccess,
-                onScanError
-            ).catch(err => {
-                console.error("❌ Не удалось запустить сканер:", err);
-            });
-
-        }).catch(err => {
-            console.error("❌ Ошибка получения камер:", err);
-        });
-    </script>
 </body>
 </html>
