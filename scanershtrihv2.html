@@ -56,17 +56,14 @@
         }
 
         const config = {
-            fps: 10,  
-            qrbox: 300,
+            fps: 20,  
+            qrbox: {width:400,height : 150},
             disableFlip: false,  
             experimentalFeatures: { useBarCodeDetectorIfSupported: true }
         };
 
         html5QrCode.start(
-            { facingMode: "environment" ,
-            width: {ideal: 1920},
-            height :{ideal: 1080}
-            }
+            { facingMode: "environment"}
             config,
             onScanSuccess,
             onScanError  
