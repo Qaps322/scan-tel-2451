@@ -29,10 +29,10 @@
     }
     #overlay {
       position: absolute;
-      top: 20%;
-      left: 15%;
-      width: 70%;
-      height: 30%;
+      top: 30%; /* поднята выше центра */
+      left: 25%;
+      width: 50%;
+      height: 15%;
       border: 2px dashed #00ff00;
       box-sizing: border-box;
       z-index: 10;
@@ -52,23 +52,14 @@
       max-height: 120px;
       overflow-y: auto;
     }
-    #start-scan {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 9999;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
   </style>
 </head>
 <body>
   <div id="scanner-container">
     <div id="interactive" class="viewport"></div>
-    <div id="overlay"></div> <!-- Можно временно убрать если хочешь -->
+    <div id="overlay"></div>
   </div>
 
-  <button id="start-scan">Запустить сканер</button>
   <div id="log"></div>
 
   <script>
@@ -81,15 +72,6 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => {
-        logToScreen("✅ Камера доступна");
-        stream.getTracks().forEach(track => track.stop());
-      })
-      .catch(err => {
-        logToScreen("❌ Камера недоступна: " + err.name + " - " + err.message);
-      });
-
     let sent = false;
 
     Quagga.init({
@@ -100,7 +82,7 @@
         constraints: {
           facingMode: "environment"
         }
-        // area — убрано полностью!
+        // area — убрали!
       },
       decoder: {
         readers: [
@@ -117,13 +99,10 @@
         logToScreen("❌ Ошибка инициализации: " + err);
         return;
       }
-      logToScreen("✅ Quagga инициализирован");
-    });
 
-    // Запуск сканера по кнопке
-    document.getElementById('start-scan').addEventListener('click', function() {
       Quagga.start();
-      logToScreen("📷 Сканер запущен вручную");
+      console.log("📷 Сканер запущен");
+      logToScreen("📷 Сканер запущен");
 
       setTimeout(() => {
         const video = document.querySelector("video");
@@ -138,7 +117,7 @@
         } else {
           logToScreen("⚠️ Видео элемент не найден!");
         }
-      }, 500);
+      }, 300);
     });
 
     Quagga.onProcessed(function(result) {
