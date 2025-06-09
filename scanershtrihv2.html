@@ -38,6 +38,18 @@
       z-index: 10;
       pointer-events: none;
     }
+    #area-highlight {
+      position: absolute;
+      top: 20%;
+      left: 15%;
+      width: 70%;
+      height: 30%;
+      border: 2px solid rgba(255, 0, 0, 0.7);
+      background: rgba(255, 0, 0, 0.2);
+      box-sizing: border-box;
+      z-index: 9;
+      pointer-events: none;
+    }
     #log {
       position: fixed;
       bottom: 10px;
@@ -52,15 +64,25 @@
       max-height: 120px;
       overflow-y: auto;
     }
+    #start-scan {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 9999;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <div id="scanner-container">
     <div id="interactive" class="viewport"></div>
     <div id="overlay"></div>
+    <div id="area-highlight"></div>
   </div>
 
-  <div id="log"></div> <!-- Логи на экран -->
+  <button id="start-scan">Запустить сканер</button>
+  <div id="log"></div>
 
   <script>
     const TelegramWebApp = window.Telegram.WebApp;
@@ -72,7 +94,6 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    // Проверяем доступность камеры
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
         logToScreen("✅ Камера доступна");
@@ -84,6 +105,7 @@
 
     let sent = false;
 
+    // Инициализация Quagga (но не запускаем сразу!)
     Quagga.init({
       inputStream: {
         name: "Live",
@@ -114,10 +136,13 @@
         logToScreen("❌ Ошибка инициализации: " + err);
         return;
       }
+      logToScreen("✅ Quagga инициализирован");
+    });
 
+    // Запуск сканера по кнопке
+    document.getElementById('start-scan').addEventListener('click', function() {
       Quagga.start();
-      console.log("📷 Сканер запущен");
-      logToScreen("📷 Сканер запущен");
+      logToScreen("📷 Сканер запущен вручную");
 
       setTimeout(() => {
         const video = document.querySelector("video");
