@@ -81,6 +81,16 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
+    // === ТЕСТ getUserMedia ===
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        logToScreen("✅ getUserMedia: Камера доступна!");
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(err => {
+        logToScreen("❌ getUserMedia: " + err.name + " - " + err.message);
+      });
+
     let sent = false;
 
     Quagga.init({
@@ -91,7 +101,6 @@
         constraints: {
           facingMode: "environment"
         }
-        // area — убрали!
       },
       decoder: {
         readers: [
@@ -111,7 +120,6 @@
 
       logToScreen("✅ Quagga инициализирован");
 
-      // Запуск сканера — только по кнопке!
       document.getElementById('start-scan').addEventListener('click', function() {
         Quagga.start();
         logToScreen("📷 Сканер запущен вручную");
