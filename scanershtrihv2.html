@@ -38,18 +38,6 @@
       z-index: 10;
       pointer-events: none;
     }
-    #area-highlight {
-      position: absolute;
-      top: 20%;
-      left: 15%;
-      width: 70%;
-      height: 30%;
-      border: 2px solid rgba(255, 0, 0, 0.7);
-      background: rgba(255, 0, 0, 0.2);
-      box-sizing: border-box;
-      z-index: 9;
-      pointer-events: none;
-    }
     #log {
       position: fixed;
       bottom: 10px;
@@ -77,8 +65,7 @@
 <body>
   <div id="scanner-container">
     <div id="interactive" class="viewport"></div>
-    <div id="overlay"></div>
-    <div id="area-highlight"></div>
+    <div id="overlay"></div> <!-- Можно временно убрать если хочешь -->
   </div>
 
   <button id="start-scan">Запустить сканер</button>
@@ -105,7 +92,6 @@
 
     let sent = false;
 
-    // Инициализация Quagga (но не запускаем сразу!)
     Quagga.init({
       inputStream: {
         name: "Live",
@@ -113,13 +99,8 @@
         target: document.querySelector('#interactive'),
         constraints: {
           facingMode: "environment"
-        },
-        area: {
-          top: "20%",
-          bottom: "50%",
-          left: "15%",
-          right: "15%"
         }
+        // area — убрано полностью!
       },
       decoder: {
         readers: [
