@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Сканер штрихкодов</title>
+  <meta charset="UTF-8" />
+  <title>Сканер штрихкодов (html5-qrcode)</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://unpkg.com/@ericblade/quagga2@1.2.6/dist/quagga.min.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/html5-qrcode@2.4.1/html5-qrcode.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     html, body {
       margin: 0;
@@ -14,159 +14,101 @@
       color: white;
       font-family: sans-serif;
       height: 100%;
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
-    #scanner-container {
+    #reader {
       width: 100%;
-      height: 100vh;
-      position: relative;
-    }
-    #interactive {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      position: relative;
-    }
-    #overlay {
-      position: absolute;
-      top: 30%;
-      left: 25%;
-      width: 50%;
-      height: 15%;
-      border: 2px dashed #00ff00;
-      box-sizing: border-box;
-      z-index: 10;
-      pointer-events: none;
-    }
-    #log {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: #00ff00;
-      font-family: monospace;
-      padding: 10px;
-      font-size: 14px;
-      z-index: 9999;
-      max-height: 120px;
-      overflow-y: auto;
+      max-width: 500px;
+      height: auto;
+      margin-top: 10px;
     }
     #start-scan {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 9999;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 15px 25px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    #log {
+      font-size: 14px;
+      margin-top: 10px;
+      color: #00ff00;
     }
   </style>
 </head>
 <body>
-  <div id="scanner-container">
-    <div id="interactive" class="viewport"></div>
-    <div id="overlay"></div>
-  </div>
 
   <button id="start-scan">Запустить сканер</button>
+  <div id="reader" style="display: none;"></div>
   <div id="log"></div>
 
   <script>
     const TelegramWebApp = window.Telegram.WebApp;
     TelegramWebApp?.ready();
 
-    function logToScreen(msg) {
-      const logDiv = document.getElementById('log');
-      logDiv.innerText += msg + '\n';
-      logDiv.scrollTop = logDiv.scrollHeight;
+    function log(msg) {
+      document.getElementById('log').innerText += msg + '\n';
     }
 
-    // === ТЕСТ getUserMedia ===
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => {
-        logToScreen("✅ getUserMedia: Камера доступна!");
-        stream.getTracks().forEach(track => track.stop());
-      })
-      .catch(err => {
-        logToScreen("❌ getUserMedia: " + err.name + " - " + err.message);
-      });
+    const html5QrCode = new Html5Qrcode("reader");
 
-    let sent = false;
+    document.getElementById('start-scan').addEventListener('click', () => {
+      document.getElementById('reader').style.display = 'block';
+      document.getElementById('start-scan').style.display = 'none';
 
-    Quagga.init({
-      inputStream: {
-        name: "Live",
-        type: "LiveStream",
-        target: document.querySelector('#interactive'),
-        constraints: {
-          facingMode: "environment"
+      Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length) {
+          log("✅ Камеры найдены: " + cameras.length);
+          const cameraId = cameras[0].id;
+
+          html5QrCode.start(
+            cameraId,
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 150 },
+              formatsToSupport: [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128
+              ]
+            },
+            (decodedText, decodedResult) => {
+              log("✅ Найден код: " + decodedText);
+              html5QrCode.stop().then(() => {
+                log("⛔️ Сканер остановлен");
+                if (TelegramWebApp && TelegramWebApp.sendData) {
+                  try {
+                    TelegramWebApp.sendData(decodedText);
+                    log("📤 Отправлено в Telegram");
+                    TelegramWebApp.close();
+                  } catch (e) {
+                    log("❌ Ошибка отправки: " + e);
+                  }
+                }
+              });
+            },
+            (errorMessage) => {
+              // Ошибка сканирования (можно не показывать, но для отладки оставим)
+              // log("❌ Ошибка сканирования: " + errorMessage);
+            }
+          );
+        } else {
+          log("❌ Камеры не найдены");
         }
-      },
-      decoder: {
-        readers: [
-          "ean_reader",
-          "upc_reader",
-          "upc_e_reader",
-          "code_128_reader"
-        ]
-      },
-      locate: true
-    }, function(err) {
-      if (err) {
-        console.error("❌ Ошибка инициализации:", err);
-        logToScreen("❌ Ошибка инициализации: " + err);
-        return;
-      }
-
-      logToScreen("✅ Quagga инициализирован");
-
-      document.getElementById('start-scan').addEventListener('click', function() {
-        Quagga.start();
-        logToScreen("📷 Сканер запущен вручную");
-
-        setTimeout(() => {
-          const video = document.querySelector("video");
-          if (video) {
-            video.setAttribute("playsinline", "");
-            video.setAttribute("muted", "");
-            video.setAttribute("autoplay", "");
-            video.controls = false;
-            video.removeAttribute("controls");
-            console.log("🎯 Видео-атрибуты обновлены");
-            logToScreen("🎯 Видео найдено");
-          } else {
-            logToScreen("⚠️ Видео элемент не найден!");
-          }
-        }, 300);
+      }).catch(err => {
+        log("❌ Ошибка получения камер: " + err);
       });
-    });
-
-    Quagga.onProcessed(function(result) {
-      logToScreen("🛠 Frame processed: " + (result ? "✅" : "❌"));
-    });
-
-    Quagga.onDetected(function(data) {
-      if (sent) return;
-
-      const code = data.codeResult.code;
-      console.log("✅ Найден штрихкод:", code);
-      logToScreen("✅ Найден штрихкод: " + code);
-      sent = true;
-
-      Quagga.stop();
-      logToScreen("⛔️ Сканер остановлен");
-
-      if (TelegramWebApp && TelegramWebApp.sendData) {
-        try {
-          TelegramWebApp.sendData(code);
-          console.log("📤 Отправлено в Telegram");
-          logToScreen("📤 Отправлено в Telegram");
-        } catch (e) {
-          console.error("❌ Ошибка отправки:", e);
-          logToScreen("❌ Ошибка отправки: " + e);
-        }
-      }
     });
   </script>
+
 </body>
 </html>
