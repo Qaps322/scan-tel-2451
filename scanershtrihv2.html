@@ -72,6 +72,16 @@
       logDiv.scrollTop = logDiv.scrollHeight;
     }
 
+    // Проверяем доступность камеры
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        logToScreen("✅ Камера доступна");
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(err => {
+        logToScreen("❌ Камера недоступна: " + err.name + " - " + err.message);
+      });
+
     let sent = false;
 
     Quagga.init({
@@ -84,7 +94,7 @@
         },
         area: {
           top: "20%",
-          bottom: "60%",
+          bottom: "600%",
           left: "25%",
           right: "25%"
         }
