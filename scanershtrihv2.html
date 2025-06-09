@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Scanner</title>
+    <title>Штрихкод сканер</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.10/minified/html5-qrcode.min.js"></script>
     <style>
         #reader {
             position: relative;
@@ -17,6 +17,11 @@
             position: absolute;
             width: 300px;
             height: 300px;
+            border: 2px dashed #00ff00;
+            box-sizing: border-box;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
@@ -55,26 +60,20 @@
             }
         }
 
-        const config = {
-            fps: 10,  
-            qrbox: 300,
-            disableFlip: false,  
-            experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-        };
-
+        // Тут ВАЖНО → formatsToSupport передаётся как 5-й параметр .start()
         html5QrCode.start(
-            { facingMode: "environment" },  // Вернул авторазмер
-            config,
-            onScanSuccess,
-            onScanError,
-            {formatsToSupport: [
+            { facingMode: "environment" }, // 1-й параметр → Камера
+            { fps: 10, qrbox: 300 },       // 2-й параметр → Конфиг сканера
+            onScanSuccess,                 // 3-й параметр → Успех
+            onScanError,                   // 4-й параметр → Ошибка
+            { formatsToSupport: [          // 5-й параметр → Поддерживаемые форматы
                 Html5QrcodeSupportedFormats.EAN_13,
                 Html5QrcodeSupportedFormats.EAN_8,
                 Html5QrcodeSupportedFormats.UPC_A,
                 Html5QrcodeSupportedFormats.UPC_E,
                 Html5QrcodeSupportedFormats.CODE_128,
                 Html5QrcodeSupportedFormats.CODE_39
-            ]}
+            ] }
         ).catch(err => {
             console.log("❌ Ошибка при запуске сканера:", err);
         });
